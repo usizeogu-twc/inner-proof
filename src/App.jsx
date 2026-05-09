@@ -1,4 +1,4 @@
-import { useState } from "react";
+hy7import { useState } from "react";
 
 const SQUARE = "https://square.link/u/Wx7s5x21";
 const STRIPE = "https://buy.stripe.com/5kQ3cu7kNbX08XbesSgw000";
