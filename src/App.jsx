@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
 
-// ── Supabase ────────────────────────────────────────────────────────────────
+// -- Supabase --
 const SUPA_URL = "https://pgnpyyvamzutuxntmdxz.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnbnB5eXZhbXp1dHV4bnRtZHh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NTg3MDQsImV4cCI6MjA5NDIzNDcwNH0.1aSEgHAKz8cndND7o2gCWSyAzggeX8DOXrje4fH6Xkg";
 const supabase = createClient(SUPA_URL, SUPA_KEY);
 
-// ── Constants ───────────────────────────────────────────────────────────────
+// -- Constants --
 const SQUARE = "https://square.link/u/Wx7s5x21";
 const STRIPE = "https://buy.stripe.com/5kQ3cu7kNbX08XbesSgw000";
 const LEGAL  = "https://drive.google.com/drive/folders/1Pw-v8LkfQrjtk63Fl4BEbqg34GI7wc8j?usp=share_link";
@@ -67,7 +67,7 @@ async function askClaude(prompt, sys) {
   } catch(e) { return "Keep going. One step at a time."; }
 }
 
-// ── Auth Screen ─────────────────────────────────────────────────────────────
+// -- Auth Screen --
 function AuthScreen({ onAuth }) {
   const [email,   setEmail]   = useState("");
   const [sent,    setSent]    = useState(false);
@@ -149,7 +149,7 @@ function AuthScreen({ onAuth }) {
   );
 }
 
-// ── Nav ──────────────────────────────────────────────────────────────────────
+// -- Nav --
 function Nav({ view, setView, streak, pro, user, onSignOut }) {
   const [showMenu, setShowMenu] = useState(false);
   const tabs = [
@@ -216,7 +216,7 @@ function Nav({ view, setView, streak, pro, user, onSignOut }) {
   );
 }
 
-// ── Upgrade Gate ─────────────────────────────────────────────────────────────
+// -- Upgrade Gate --
 function Gate({ onDemo }) {
   const [agreed, setAgreed] = useState(false);
   const [warn,   setWarn]   = useState(false);
@@ -278,7 +278,7 @@ function Gate({ onDemo }) {
   );
 }
 
-// ── Pillar Card ───────────────────────────────────────────────────────────────
+// -- Pillar Card --
 function PillarCard({ pillar, data, onSave, locked }) {
   const [open,    setOpen]    = useState(false);
   const [notes,   setNotes]   = useState(data?.notes||"");
@@ -361,7 +361,7 @@ function PillarCard({ pillar, data, onSave, locked }) {
   );
 }
 
-// ── Today View ────────────────────────────────────────────────────────────────
+// -- Today View --
 function TodayView({ userId, pro, setView, dbData, setDbData }) {
   const key = todayKey();
   const entry = dbData.entries[key] || {};
@@ -443,7 +443,7 @@ function TodayView({ userId, pro, setView, dbData, setDbData }) {
   );
 }
 
-// ── Intention View ─────────────────────────────────────────────────────────
+// -- Intention View --
 function IntentionView({ userId, dbData, setDbData }) {
   const key  = todayKey();
   const entry = dbData.entries[key] || {};
@@ -538,7 +538,7 @@ function IntentionView({ userId, dbData, setDbData }) {
   );
 }
 
-// ── True Rhythm Review ────────────────────────────────────────────────────
+// -- True Rhythm Review --
 function TrueRhythm({ userId, dbData }) {
   const [offset,     setOffset]     = useState(0);
   const [reflection, setReflection] = useState("");
@@ -651,7 +651,7 @@ function TrueRhythm({ userId, dbData }) {
   );
 }
 
-// ── Proof Log ─────────────────────────────────────────────────────────────
+// -- Proof Log --
 function ProofLog({ dbData }) {
   const days = Object.keys(dbData.entries).sort((a,b)=>b.localeCompare(a)).slice(0,60);
   if (!days.length) return (
@@ -695,7 +695,7 @@ function ProofLog({ dbData }) {
   );
 }
 
-// ── Dashboard ─────────────────────────────────────────────────────────────
+// -- Dashboard --
 function Dashboard({ dbData, user, pro, onUpgrade }) {
   if (!pro) return (
     <div style={{padding:"18px 15px",maxWidth:480,margin:"0 auto"}}>
@@ -842,7 +842,7 @@ function Dashboard({ dbData, user, pro, onUpgrade }) {
   );
 }
 
-// ── Main App ──────────────────────────────────────────────────────────────
+// -- Main App --
 export default function App() {
   const [session,  setSession]  = useState(null);
   const [loading,  setLoading]  = useState(false);
@@ -850,23 +850,45 @@ export default function App() {
   const [pro,      setPro]      = useState(false);
   const [dbData,   setDbData]   = useState({entries:{}, pillars:{}});
 
-  // Listen for auth state
+  // Listen for auth state and handle magic link callback
   useEffect(() => {
     let mounted = true;
-    const timeout = setTimeout(() => { if (mounted) setLoading(false); }, 3000);
 
-    supabase.auth.getSession().then(({data}) => {
-      if (!mounted) return;
-      clearTimeout(timeout);
-      setSession(data?.session || null);
-      setLoading(false);
-    }).catch(() => {
-      if (!mounted) return;
-      clearTimeout(timeout);
-      setLoading(false);
+    async function init() {
+      // Handle magic link token in URL hash or query params
+      const hash = window.location.hash;
+      const search = window.location.search;
+      const hasToken = hash.includes("access_token") || 
+                       search.includes("access_token") ||
+                       hash.includes("token_hash") ||
+                       search.includes("token_hash") ||
+                       search.includes("code");
+
+      if (hasToken) {
+        // Let Supabase process the token from the URL
+        const { data, error } = await supabase.auth.getSession();
+        if (mounted) {
+          setSession(data?.session || null);
+          // Clean up the URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setLoading(false);
+        }
+        return;
+      }
+
+      // Normal session check
+      const { data } = await supabase.auth.getSession();
+      if (mounted) {
+        setSession(data?.session || null);
+        setLoading(false);
+      }
+    }
+
+    init().catch(() => {
+      if (mounted) setLoading(false);
     });
 
-    const {data:{subscription}} = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
       setSession(session);
       setLoading(false);
@@ -874,7 +896,6 @@ export default function App() {
 
     return () => {
       mounted = false;
-      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, []);
